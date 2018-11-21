@@ -6,18 +6,21 @@ class App extends Component {
     constructor(){
         super();
         this.state={
+            dataUsuario : [],
             horaactual : null,
-            logueado : true,
+            logueado : false,
             codigoUsuario : "72928871",
-            nombreUsuario : "Raul",
             numAsistencias : 10,
             numTardanzas : 2,
             numFaltas : 1,
+            alerta : ""
         }
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
         this.cambiarcodigo = this.cambiarcodigo.bind(this);
         this.fetchUsuario = this.fetchUsuario.bind(this);
+        this.marcarAsistencia = this.marcarAsistencia.bind(this);
+        this.cerrarAlerta = this.cerrarAlerta.bind(this);
     }
 
     login(){
@@ -29,21 +32,61 @@ class App extends Component {
     }
 
     cambiarcodigo(event){
-    this.setState({ codigoUsuario : event.target.value });
+        this.setState({ codigoUsuario : event.target.value });
+    }
+
+    cerrarAlerta(){
+        this.setState({ alerta : ""});
+    }
+
+    marcarAsistencia(){
+        const data = {
+            dni : this.state.dataUsuario.UsuarioTrabajador.dni
+        };
+        fetch("http://127.0.0.1:5000/usuariotrabajador/"+this.state.codigoUsuario,{
+            method : 'POST',
+            headers : {
+                'Accept' : '*/*',
+                'Content-Type' : 'application/json; charset=UTF-8'
+            },
+            body : JSON.stringify(data)
+        })
+        .then((response) =>{
+            return response.json();
+        })
+        .then((result) => {
+            console.log(result);
+            if(result.UsuarioTrabajador.dni===null){
+                console.log("datos nulo");
+                this.setState({ alerta : "Código invalido, Intente nuevamente."});
+            }else{
+                this.setState({
+                    dataUsuario : result,
+                    logueado : true
+                });
+            }
+        })
     }
 
     fetchUsuario(){
-        fetch("http://127.0.0.1:5000/usuariotrabajador",{
-            method: 'GET',
-            mode:'no-cors',
-            dataType: 'json'
-        })
+        this.setState({
+            logueado : false
+        });
+        fetch("http://127.0.0.1:5000/usuariotrabajador/"+this.state.codigoUsuario)
         .then((response) =>{
-            console.log(response);
-                return response.blob();
+            return response.json();
         })
-        .then((body) => {
-            console.log(body.length);
+        .then((result) => {
+            console.log(result);
+            if(result.UsuarioTrabajador.dni===null){
+                console.log("datos nulo");
+                this.setState({ alerta : "Código invalido, Intente nuevamente."});
+            }else{
+                this.setState({
+                    dataUsuario : result,
+                    logueado : true
+                });
+            }
         })
     }
 
@@ -72,28 +115,83 @@ class App extends Component {
     render() {
         return (
             <div className="App">
-                <header className="App-header">
-                {this.state.logueado?
-                    (
-                        <div>
-                            <h1>{this.state.horaactual}</h1>
-                            <h2>Buenos días {this.state.nombreUsuario} !</h2><hr/>
-                            <label>Tienes {this.state.numAsistencias} Asistencias</label><hr/>
-                            <label>Tienes {this.state.numTardanzas} Tardanzas</label><hr/>
-                            <label>Tienes {this.state.numFaltas} Faltas</label>
+                <div className="container-fluid">
+                    <div className="row">
+                        <div className="col-2"></div>
+                        <div className="col-8">
+                            {this.state.logueado===true?
+                                (
+
+                                    <div>
+                                        <br/><br/><br/><br/><br/><br/><br/>
+                                        <div className="row">
+                                            <div className="col-12">
+                                                <h1>{this.state.horaactual}</h1>
+                                            </div>
+                                        </div>
+                                        <div className="row">
+                                            <div className="col-12">
+                                                <h2>¡Buenos días {this.state.dataUsuario.UsuarioTrabajador.nombre}!</h2>
+                                            </div>
+                                        </div>
+                                        <div className="row">
+                                            <div className="col-12">
+                                                <br/>
+                                                <button className="btn btn-outline-success" onClick={this.marcarAsistencia}>MARCAR ASISTENCIA</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ):(
+                                    <div className="row">
+                                        <div className="col-12">
+                                            <div className="row">
+                                                <div className="col-3"></div>
+                                                <div className="col-6">
+                                                    <div className="row">
+                                                        <div className="col">
+                                                            <label>Ingresa tu codigo o DNI:</label>
+                                                        </div>
+                                                    </div>
+                                                    <div className="row">
+                                                        <div className="col-3"></div>
+                                                        <div className="col-6">
+                                                            <input className="form-control" id="campodni" type="text" value={this.state.codigoUsuario} onChange={this.cambiarcodigo} maxLength={8}/>
+                                                        </div>
+                                                        <div className="col-3"></div>
+                                                    </div>
+                                                    <div className="row">
+                                                        <div className="col">
+                                                            <br/>
+                                                            <button className="btn btn-outline-success" onClick={this.fetchUsuario}>ENTRAR</button>
+                                                        </div>
+                                                    </div>
+                                                    {this.state.alerta!==""?
+                                                        (<div className="row">
+                                                            <div className="col-12">
+                                                                <div className="alert alert-primary alert-dismissible fade show" role="alert">
+                                                                    {this.state.alerta}
+                                                                    <button onClick={this.cerrarAlerta} type="button" className="close" data-dismiss="alert" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>):(null)
+                                                    }
+                                                </div>
+                                                <div className="col-3"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            }
                         </div>
-                    ):(
-                        <div>
-                            <label>Insertar tu codigo:</label>
-                            <input type="text" value={this.state.codigo} onChange={this.cambiarcodigo} maxLength={9}/>
-                            <button onClick={this.fetchUsuario}>ENTRAR</button>
-                        </div>
-                    )
-                }
-                </header>
+                        <div className="col-2"></div>
+                    </div>
+                </div>
             </div>
         );
     }
+
 }
 
 export default App;
